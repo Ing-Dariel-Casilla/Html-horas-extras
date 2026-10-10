@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Horas Extras</title>
+<style>
+/* ============================================================
+   TOKENS / THEME
+============================================================ */
+:root{
+  --bg:#EFF4FA;
+  --surface:#FFFFFF;
+  --surface-alt:#EAF1F8;
+  --surface-alt-2:#DCE9F5;
+  --border:#D7E2EE;
+  --text:#132338;
+  --text-muted:#5C7593;
+  --primary:#154766;
+  --primary-light:#4E97C8;
+  --primary-soft:#E5F0F9;
+  --success:#188550;
+  --success-bg:#E1F6EB;
+  --warning:#B4750A;
+  --warning-bg:#FCF0D6;
+  --approved:#6244C4;
+  --approved-bg:#ECE6FB;
+  --danger:#BC3434;
+  --danger-bg:#FAE6E6;
+  --radius-lg:18px;
+  --radius:12px;
+  --radius-sm:9px;
+  --shadow-sm:0 1px 2px rgba(19,35,56,.07), 0 1px 1px rgba(19,35,56,.04);
+  --shadow-md:0 10px 26px rgba(19,35,56,.11);
+  --shadow-lg:0 24px 56px rgba(19,35,56,.20);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --focus-ring:0 0 0 3px rgba(78,151,200,.45);
+}
+[data-theme="dark"]{
+  --bg:#0A111E;
+  --surface:#111A2C;
+  --surface-alt:#172236;
+  --surface-alt-2:#1D2B44;
+  --border:#26334D;
+  --text:#E8EFF8;
+  --text-muted:#8CA0BE;
+  --primary:#72B6E3;
+  --primary-light:#93CBEE;
+  --primary-soft:#152A3D;
+  --success:#43D293;
+  --success-bg:rgba(67,210,147,.14);
+  --warning:#F0BB4E;
+  --warning-bg:rgba(240,187,78,.14);
+  --approved:#B7A0F7;
+  --approved-bg:rgba(183,160,247,.16);
+  --danger:#F58787;
+  --danger-bg:rgba(245,135,135,.14);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.45);
+  --shadow-md:0 10px 26px rgba(0,0,0,.5);
+  --shadow-lg:0 24px 56px rgba(0,0,0,.6);
+  --focus-ring:0 0 0 3px rgba(114,182,227,.5);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s ease,color .25s ease;
+  padding-bottom:60px;
+  line-height:1.45;
+}
+h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-0.01em;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--primary-light);color:#fff;}
+.tabular{font-variant-numeric:tabular-nums;}
+a{color:var(--primary);}
+
+:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:6px;}
+button:focus-visible,.icon-btn:focus-visible,.cal-day:focus-visible{box-shadow:var(--focus-ring);}
+
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+
+/* ============================================================
+   LAYOUT
+============================================================ */
+.container{max-width:1360px;margin:0 auto;padding:0 20px;}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow-sm);
+}
+.topbar-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;max-width:1360px;margin:0 auto;gap:16px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;}
+.brand-mark{
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(150deg,var(--primary),var(--primary-light));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;box-shadow:var(--shadow-sm);flex-shrink:0;
+}
+.brand-text{min-width:0;}
+.brand-text h1{font-size:18px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.brand-text p{margin:0;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-actions{display:flex;align-items:center;gap:10px;}
+.save-indicator{
+  font-size:11.5px;color:var(--success);display:flex;align-items:center;gap:5px;
+  opacity:0;transition:opacity .3s ease;font-weight:600;
+}
+.save-indicator.show{opacity:1;}
+.save-indicator svg{width:13px;height:13px;}
+
+.icon-btn{
+  width:40px;height:40px;border-radius:10px;
+  border:1px solid var(--border);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text);transition:background .15s,transform .1s;flex-shrink:0;
+}
+.icon-btn:hover{background:var(--surface-alt);}
+.icon-btn:active{transform:scale(.94);}
+.icon-btn svg{width:19px;height:19px;}
+.icon-btn.danger-hover:hover{color:var(--danger);background:var(--danger-bg);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:10px;border:1px solid transparent;
+  font-size:14px;font-weight:600;transition:transform .1s,filter .15s,background .15s;
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.97);}
+.btn svg{width:16px;height:16px;flex-shrink:0;}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:var(--shadow-sm);}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-outline{background:var(--surface);color:var(--text);border-color:var(--border);}
+.btn-outline:hover{background:var(--surface-alt);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{filter:brightness(1.08);}
+.btn-ghost{background:transparent;color:var(--text-muted);border-color:transparent;}
+.btn-ghost:hover{background:var(--surface-alt);color:var(--text);}
+.btn-sm{padding:7px 11px;font-size:12.5px;border-radius:8px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-chip{
+  padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-muted);
+}
+.btn-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+.section{margin-top:28px;}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.section-head h2{font-size:16px;}
+.section-head .hint{font-size:12.5px;color:var(--text-muted);}
+.eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--primary-light);margin-bottom:4px;display:block;
+}
+
+.panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-sm);
+}
+
+/* ============================================================
+   DASHBOARD CARDS
+============================================================ */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-sm);transition:transform .15s ease;
+}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent,var(--primary));}
+.stat-card-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.stat-card .stat-label{font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.stat-icon{width:26px;height:26px;border-radius:8px;background:var(--accent-bg,var(--primary-soft));color:var(--accent,var(--primary));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stat-icon svg{width:14px;height:14px;}
+.stat-card .stat-value{font-size:21px;font-weight:800;margin-top:8px;color:var(--text);}
+.stat-card .stat-sub{font-size:11.5px;color:var(--text-muted);margin-top:3px;}
+.stat-card.c-total{--accent:var(--primary);--accent-bg:var(--primary-soft);}
+.stat-card.c-week{--accent:#3E7CB1;--accent-bg:#E3EFF8;}
+.stat-card.c-month{--accent:#2A6C97;--accent-bg:#E3EFF8;}
+.stat-card.c-days{--accent:#8C6FD1;--accent-bg:var(--approved-bg);}
+.stat-card.c-pending{--accent:var(--warning);--accent-bg:var(--warning-bg);}
+.stat-card.c-approved{--accent:var(--approved);--accent-bg:var(--approved-bg);}
+.stat-card.c-paid{--accent:var(--success);--accent-bg:var(--success-bg);}
+.stat-card.c-money-total{--accent:var(--primary);--accent-bg:var(--primary-soft);}
+.stat-card.c-money-pending{--accent:var(--warning);--accent-bg:var(--warning-bg);}
+.stat-card.c-money-paid{--accent:var(--success);--accent-bg:var(--success-bg);}
+[data-theme="dark"] .stat-card.c-week,[data-theme="dark"] .stat-card.c-month{--accent-bg:var(--primary-soft);}
+
+/* ============================================================
+   CONTENT GRID
+============================================================ */
+.content-grid{display:grid;grid-template-columns:400px 1fr;gap:18px;align-items:start;}
+
+/* CALENDAR */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;}
+.cal-title{font-size:15px;font-weight:700;text-transform:capitalize;}
+.cal-nav{display:flex;gap:6px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-dow{text-align:center;font-size:10.5px;font-weight:700;color:var(--text-muted);padding:4px 0;text-transform:uppercase;}
+.cal-day{
+  position:relative;aspect-ratio:1/1;border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:600;color:var(--text);
+  background:var(--surface-alt);border:1px solid transparent;
+  transition:background .15s,transform .1s;padding:0;
+}
+.cal-day.empty{background:transparent;}
+.cal-day.clickable{cursor:pointer;}
+.cal-day.clickable:hover{background:var(--primary-soft);transform:translateY(-1px);}
+.cal-day.today{border-color:var(--primary-light);}
+.cal-day.has-data{background:var(--primary-soft);}
+.cal-day.selected{background:var(--primary);color:#fff;}
+.cal-day.selected .cal-day-badge{color:#fff;opacity:.9;}
+.cal-day-num{line-height:1;}
+.cal-day-badge{font-size:8.5px;font-weight:700;margin-top:2px;color:var(--primary);opacity:.85;}
+.cal-day.selected .cal-day-badge{color:#fff;}
+.cal-summary{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);}
+.cal-summary-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text-muted);}
+.cal-summary-row b{color:var(--text);font-weight:700;}
+
+.day-detail{margin-top:14px;background:var(--surface-alt);border-radius:var(--radius-sm);padding:12px;}
+.day-detail-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;}
+.day-detail h4{font-size:13px;text-transform:capitalize;}
+.day-detail-empty{font-size:12.5px;color:var(--text-muted);margin:0;}
+.day-entry{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:9px 10px;margin-bottom:7px;font-size:12.5px;cursor:pointer;transition:border-color .15s;
+}
+.day-entry:hover{border-color:var(--primary-light);}
+.day-entry:last-child{margin-bottom:0;}
+.day-entry-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;}
+.day-entry-hours{font-weight:800;color:var(--primary);}
+.day-entry-meta{color:var(--text-muted);font-size:11.5px;display:flex;justify-content:space-between;gap:8px;}
+
+/* FILTERS */
+.filters-panel{margin-top:18px;}
+.filters-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11.5px;font-weight:600;color:var(--text-muted);}
+.field input,.field select,.field textarea{
+  padding:9px 10px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-size:13px;width:100%;
+  transition:border-color .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary-light);box-shadow:var(--focus-ring);}
+.filters-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.filter-chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+
+/* TABLE */
+.table-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.table-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);}
+table.records{width:100%;border-collapse:collapse;font-size:13px;min-width:920px;}
+table.records thead th{
+  background:var(--surface-alt);color:var(--text-muted);text-align:left;
+  padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid var(--border);position:sticky;top:0;user-select:none;
+}
+table.records thead th.sortable{cursor:pointer;}
+table.records thead th.sortable:hover{color:var(--text);}
+table.records thead th .sort-arrow{margin-left:4px;font-size:10px;opacity:.6;}
+table.records thead th.sorted{color:var(--primary);}
+table.records tbody td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+table.records tbody tr:last-child td{border-bottom:none;}
+table.records tbody tr:hover{background:var(--surface-alt);}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;
+  font-size:11px;font-weight:700;white-space:nowrap;
+}
+.badge-pendiente{background:var(--warning-bg);color:var(--warning);}
+.badge-pagada{background:var(--success-bg);color:var(--success);}
+.badge-aprobada{background:var(--approved-bg);color:var(--approved);}
+.badge-type{background:var(--primary-soft);color:var(--primary);}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.status-select{
+  appearance:none;-webkit-appearance:none;border:1px solid transparent;border-radius:20px;
+  padding:4px 24px 4px 10px;font-size:11px;font-weight:700;cursor:pointer;
+  background-repeat:no-repeat;background-position:right 7px center;background-size:9px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+.status-select.badge-pendiente{background-color:var(--warning-bg);color:var(--warning);}
+.status-select.badge-pagada{background-color:var(--success-bg);color:var(--success);}
+.status-select.badge-aprobada{background-color:var(--approved-bg);color:var(--approved);}
+.row-actions{display:flex;gap:6px;}
+.row-actions .icon-btn{width:32px;height:32px;border-radius:8px;}
+.row-actions .icon-btn svg{width:15px;height:15px;}
+.money-cell{font-weight:700;color:var(--success);}
+.empty-state{padding:50px 20px;text-align:center;color:var(--text-muted);}
+.empty-state svg{width:44px;height:44px;margin-bottom:10px;opacity:.5;}
+.empty-state p{margin:4px 0 0;font-size:13px;}
+
+/* MOBILE RECORD CARDS */
+.records-cards{display:none;flex-direction:column;gap:10px;}
+.record-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;box-shadow:var(--shadow-sm);
+}
+.record-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.record-card-date{font-weight:800;font-size:14px;}
+.record-card-dow{font-size:11.5px;color:var(--text-muted);text-transform:capitalize;}
+.record-card-rows{display:flex;flex-direction:column;gap:6px;font-size:12.5px;margin-bottom:10px;}
+.record-card-row{display:flex;justify-content:space-between;color:var(--text-muted);}
+.record-card-row b{color:var(--text);font-weight:700;}
+.record-card-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.record-card-actions{display:flex;gap:8px;}
+.record-card-actions .icon-btn{flex:1;width:auto;height:42px;border-radius:9px;}
+
+/* SETTINGS */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.settings-block h3{font-size:13.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.settings-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.settings-fields .field.full{grid-column:1/-1;}
+.backup-actions{display:flex;flex-direction:column;gap:10px;}
+.file-input-wrap{position:relative;}
+.file-input-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.money-preview{
+  background:var(--success-bg);color:var(--success);border-radius:10px;padding:12px 14px;
+  font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;
+}
+.sample-note{
+  background:var(--warning-bg);color:var(--warning);border-radius:10px;padding:10px 12px;
+  font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;
+}
+.backup-info{font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;}
+.mult-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+
+/* REPORTS */
+.report-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;}
+.report-controls .field{min-width:150px;}
+.report-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.report-stat{background:var(--surface-alt);border-radius:var(--radius-sm);padding:12px 14px;}
+.report-stat .stat-label{font-size:10.5px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.report-stat .stat-value{font-size:17px;font-weight:800;margin-top:5px;}
+.report-charts{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.chart-block h4{font-size:12.5px;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px;}
+.bar-label{width:78px;flex-shrink:0;color:var(--text-muted);}
+.bar-track{flex:1;height:12px;background:var(--surface-alt);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.2,.8,.2,1);}
+.bar-value{width:70px;flex-shrink:0;text-align:right;font-weight:700;}
+.report-empty{color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center;}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(8,15,26,.58);backdrop-filter:blur(2px);
+  display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;
+  opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+.modal-overlay.open{opacity:1;pointer-events:auto;}
+.modal{
+  background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+  width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
+  transform:translateY(14px) scale(.98);transition:transform .22s ease;
+}
+.modal-overlay.open .modal{transform:translateY(0) scale(1);}
+.modal-sm{max-width:420px;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;z-index:2;}
+.modal-head h3{font-size:16px;}
+.modal-body{padding:20px 22px;}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--surface);border-radius:0 0 var(--radius-lg) var(--radius-lg);flex-wrap:wrap;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-grid .full{grid-column:1/-1;}
+.toggle-row{display:flex;align-items:center;gap:10px;background:var(--surface-alt);padding:10px 12px;border-radius:9px;margin:4px 0 2px;grid-column:1/-1;}
+.switch{position:relative;width:38px;height:22px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--border);border-radius:22px;transition:.2s;cursor:pointer;}
+.slider::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.switch input:checked + .slider{background:var(--primary);}
+.switch input:checked + .slider::before{transform:translateX(16px);}
+.switch input:focus-visible + .slider{box-shadow:var(--focus-ring);}
+.toggle-row span{font-size:12.5px;font-weight:600;color:var(--text-muted);}
+.auto-result{
+  grid-column:1/-1;background:var(--primary-soft);border-radius:9px;padding:10px 12px;
+  font-size:13px;display:flex;justify-content:space-between;align-items:center;color:var(--primary);font-weight:700;flex-wrap:wrap;gap:6px;
+}
+.money-result{
+  grid-column:1/-1;background:var(--success-bg);border-radius:9px;padding:10px 12px;
+  font-size:13px;display:flex;justify-content:space-between;align-items:center;color:var(--success);font-weight:700;
+}
+.error-box{
+  grid-column:1/-1;background:var(--danger-bg);color:var(--danger);border-radius:9px;padding:10px 12px;
+  font-size:12.5px;font-weight:600;display:none;
+}
+.error-box.show{display:block;}
+
+/* TOAST */
+#toast-container{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:320px;}
+.toast{
+  background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--primary);
+  box-shadow:var(--shadow-md);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);
+  min-width:240px;animation:toastIn .25s ease;
+}
+.toast.success{border-left-color:var(--success);}
+.toast.danger{border-left-color:var(--danger);}
+.toast.warning{border-left-color:var(--warning);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* MISC */
+.hidden{display:none !important;}
+.fade-in{animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.shortcut-hint{font-size:10.5px;color:var(--text-muted);opacity:.8;}
+kbd{background:var(--surface-alt);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10px;font-family:inherit;}
+
+/* RESPONSIVE */
+@media (max-width:1100px){
+  .stats-grid{grid-template-columns:repeat(3,1fr);}
+  .content-grid{grid-template-columns:1fr;}
+  .settings-grid{grid-template-columns:1fr;}
+  .report-stats{grid-template-columns:repeat(2,1fr);}
+  .report-charts{grid-template-columns:1fr;}
+}
+@media (max-width:720px){
+  .table-wrap{display:none;}
+  .records-cards{display:flex;}
+}
+@media (max-width:640px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .form-grid{grid-template-columns:1fr;}
+  .filters-grid{grid-template-columns:1fr;}
+  .settings-fields{grid-template-columns:1fr;}
+  .mult-grid{grid-template-columns:1fr;}
+  .brand-text p{display:none;}
+  .topbar-inner{padding:12px 14px;}
+  .container{padding:0 12px;}
+  .save-indicator{display:none;}
+  .report-stats{grid-template-columns:1fr 1fr;}
+}
+
+/* PRINT */
+@media print{
+  .topbar, .stats-grid, .content-grid > div:first-child, .filters-panel, .table-toolbar, #settings, #reports, .modal-overlay, #toast-container{display:none !important;}
+  body{background:#fff;padding:0;}
+  .content-grid{display:block;}
+  .table-wrap{border:none;display:block !important;}
+  .records-cards{display:none !important;}
+  table.records thead th{background:#fff !important;color:#000 !important;}
+  .panel{box-shadow:none;border:none;padding:0;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOPBAR
+============================================================ -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Control de Horas Extras</h1>
+        <p id="employeeSubtitle">Registro y seguimiento personal</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="save-indicator" id="saveIndicator" role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        Guardado
+      </span>
+      <button class="icon-btn" id="themeToggle" title="Cambiar tema" aria-label="Cambiar entre modo claro y oscuro">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+      </button>
+      <button class="btn btn-primary" id="btnOpenAdd" title="Agregar horas extras (atajo: N)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Agregar horas extras</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============================================================
+       DASHBOARD
+  ============================================================ -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Resumen</span>
+        <h2>Panel de estadísticas</h2>
+      </div>
+      <span class="hint" id="lastUpdated"></span>
+    </div>
+    <div class="stats-grid" id="statsGrid"></div>
+  </section>
+
+  <!-- ============================================================
+       CALENDAR + FILTERS  /  TABLE
+  ============================================================ -->
+  <section class="section content-grid">
+    <div>
+      <div class="panel">
+        <div class="cal-header">
+          <span></span>
+          <h3 class="cal-title" id="calTitle"></h3>
+          <div class="cal-nav">
+            <button class="icon-btn btn-sm" id="calPrev" title="Mes anterior" aria-label="Mes anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="icon-btn btn-sm" id="calToday" title="Ir a hoy" aria-label="Ir al mes actual">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+            </button>
+            <button class="icon-btn btn-sm" id="calNext" title="Mes siguiente" aria-label="Mes siguiente">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calDow"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
+        <div class="cal-summary" id="calSummary"></div>
+        <div class="day-detail" id="dayDetail"></div>
+      </div>
+
+      <div class="panel filters-panel">
+        <div class="section-head" style="margin-bottom:12px;">
+          <h2 style="font-size:14px;">Filtros</h2>
+        </div>
+        <div class="filters-grid">
+          <div class="field full">
+            <label for="fText">Buscar por texto</label>
+            <input type="text" id="fText" placeholder="Nota, observación...">
+          </div>
+          <div class="field">
+            <label for="fDate">Fecha exacta</label>
+            <input type="date" id="fDate">
+          </div>
+          <div class="field">
+            <label for="fStatus">Estado</label>
+            <select id="fStatus">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="pagada">Pagada</option>
+              <option value="aprobada">Aprobada</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fDateFrom">Desde</label>
+            <input type="date" id="fDateFrom">
+          </div>
+          <div class="field">
+            <label for="fDateTo">Hasta</label>
+            <input type="date" id="fDateTo">
+          </div>
+          <div class="field">
+            <label for="fType">Tipo de hora</label>
+            <select id="fType">
+              <option value="">Todos</option>
+              <option value="normal">Día normal</option>
+              <option value="domingo">Domingo</option>
+              <option value="feriado">Día feriado</option>
+              <option value="nocturna">Nocturna</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fMonth">Mes</label>
+            <select id="fMonth"><option value="">Todos</option></select>
+          </div>
+          <div class="field full">
+            <label for="fYear">Año</label>
+            <select id="fYear"><option value="">Todos</option></select>
+          </div>
+        </div>
+        <div class="filter-chips">
+          <button type="button" class="btn-chip" id="chipPagadas">Solo pagadas</button>
+          <button type="button" class="btn-chip" id="chipPendientes">Solo pendientes</button>
+        </div>
+        <div class="filters-actions">
+          <button class="btn btn-outline btn-sm" id="btnClearFilters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+            Limpiar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-toolbar">
+        <div>
+          <span class="eyebrow">Historial</span>
+          <h2 style="font-size:15px;">Registros de horas extras</h2>
+        </div>
+        <div class="table-toolbar-actions">
+          <button class="btn btn-outline btn-sm" id="btnExportCsv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-outline btn-sm" id="btnPrint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+            Imprimir
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="records">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="date">Fecha <span class="sort-arrow"></span></th>
+              <th>Día</th><th>Entrada</th><th>Salida</th>
+              <th class="sortable" data-sort="minutes">Horas <span class="sort-arrow"></span></th>
+              <th class="sortable" data-sort="type">Tipo <span class="sort-arrow"></span></th>
+              <th class="sortable" data-sort="status">Estado <span class="sort-arrow"></span></th>
+              <th class="sortable" data-sort="money">Dinero <span class="sort-arrow"></span></th>
+              <th>Nota</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+      <div class="records-cards" id="recordsCards"></div>
+      <div class="empty-state hidden" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/></svg>
+        <div><strong>No hay registros</strong><p>Agrega tu primera hora extra o ajusta los filtros.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       REPORTS
+  ============================================================ -->
+  <section class="section panel" id="reports">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Análisis</span>
+        <h2>Reportes</h2>
+      </div>
+      <span class="hint">Resumen por periodo, horas y dinero</span>
+    </div>
+    <div class="report-controls">
+      <div class="field">
+        <label for="repPeriod">Periodo</label>
+        <select id="repPeriod">
+          <option value="day">Día</option>
+          <option value="week">Semana</option>
+          <option value="month" selected>Mes</option>
+          <option value="year">Año</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="repDate">Fecha de referencia</label>
+        <input type="date" id="repDate">
+      </div>
+      <button class="btn btn-primary btn-sm" id="btnGenerateReport">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-6 3 3 5-8"/></svg>
+        Generar reporte
+      </button>
+    </div>
+    <div id="reportOutput"></div>
+  </section>
+
+  <!-- ============================================================
+       SETTINGS
+  ============================================================ -->
+  <section class="section panel" id="settings">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Configuración</span>
+        <h2>Información del trabajo y respaldo</h2>
+      </div>
+    </div>
+    <div class="settings-grid">
+      <div class="settings-block">
+        <h3>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Datos del empleado
+        </h3>
+        <div class="settings-fields">
+          <div class="field"><label for="setName">Nombre del empleado</label><input type="text" id="setName" placeholder="Ej. Juan Pérez"></div>
+          <div class="field"><label for="setCompany">Empresa</label><input type="text" id="setCompany" placeholder="Ej. Constructora ABC"></div>
+          <div class="field"><label for="setPosition">Puesto</label><input type="text" id="setPosition" placeholder="Ej. Supervisor"></div>
+          <div class="field"><label for="setCurrency">Moneda</label><input type="text" id="setCurrency" placeholder="RD$" value="RD$"></div>
+          <div class="field"><label for="setWeekStart">Primer día de la semana</label>
+            <select id="setWeekStart"><option value="monday">Lunes</option><option value="sunday">Domingo</option></select>
+          </div>
+          <div class="field"><label for="setTimeFormat">Formato de hora</label>
+            <select id="setTimeFormat"><option value="12">12 horas (AM/PM)</option><option value="24">24 horas</option></select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <h3>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Tarifas y multiplicadores
+        </h3>
+        <div class="settings-fields">
+          <div class="field"><label for="setRateNormal">Salario por hora normal</label><input type="number" id="setRateNormal" min="0" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div class="mult-grid">
+          <div class="field"><label for="multNormal">Multiplicador · Día normal</label><input type="number" id="multNormal" min="0" step="0.01" placeholder="1.50"></div>
+          <div class="field"><label for="multDomingo">Multiplicador · Domingo</label><input type="number" id="multDomingo" min="0" step="0.01" placeholder="2.00"></div>
+          <div class="field"><label for="multFeriado">Multiplicador · Feriado</label><input type="number" id="multFeriado" min="0" step="0.01" placeholder="2.00"></div>
+          <div class="field"><label for="multNocturna">Multiplicador · Nocturna</label><input type="number" id="multNocturna" min="0" step="0.01" placeholder="1.75"></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:8px 0 0;">El dinero por registro se calcula como: horas × salario normal × multiplicador del tipo.</p>
+
+        <div class="money-preview" id="moneyPreview" style="margin-top:14px;display:none;">
+          <span>Dinero total estimado</span>
+          <span id="moneyPreviewValue" class="tabular">RD$0.00</span>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btnSaveSettings" style="margin-top:14px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+          Guardar configuración
+        </button>
+
+        <div class="sample-note hidden" id="sampleNote">
+          <span>Tienes registros de ejemplo cargados para mostrarte cómo funciona la app.</span>
+          <button class="btn btn-outline btn-sm" id="btnRemoveSamples">Eliminar datos de ejemplo</button>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <h3>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Respaldo de datos
+        </h3>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-top:0;">Tus registros se guardan automáticamente en este navegador. Exporta un respaldo periódicamente para no perder tu información.</p>
+        <div class="backup-info" id="backupInfo">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <span id="backupInfoText">Aún no has exportado un respaldo.</span>
+        </div>
+        <div class="backup-actions" style="margin-top:12px;">
+          <button class="btn btn-outline" id="btnExportJson">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Exportar respaldo (JSON)
+          </button>
+          <div class="file-input-wrap">
+            <button class="btn btn-outline" type="button" id="btnImportTrigger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Importar respaldo (JSON)
+            </button>
+            <input type="file" id="importFile" accept="application/json" aria-label="Seleccionar archivo de respaldo JSON">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p style="font-size:11.5px;color:var(--text-muted);">
+          <kbd>N</kbd> nuevo registro · <kbd>/</kbd> buscar · <kbd>Esc</kbd> cerrar ventanas
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align:center;padding:30px 0 10px;color:var(--text-muted);font-size:11.5px;">
+    Control de Horas Extras · Todos los datos permanecen guardados en este navegador
+  </footer>
+</main>
+
+<!-- ============================================================
+     FORM MODAL
+============================================================ -->
+<div class="modal-overlay" id="formModal" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="formModalTitle">Agregar horas extras</h3>
+      <button class="icon-btn btn-sm" id="btnCloseForm" aria-label="Cerrar formulario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="recordForm">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="error-box" id="formError" role="alert"></div>
+
+          <div class="field">
+            <label for="fldDate">Fecha *</label>
+            <input type="date" id="fldDate" required>
+          </div>
+          <div class="field">
+            <label for="fldDow">Día de la semana</label>
+            <input type="text" id="fldDow" readonly style="background:var(--surface-alt);">
+          </div>
+
+          <div class="field">
+            <label for="fldIn">Hora de entrada</label>
+            <input type="time" id="fldIn">
+          </div>
+          <div class="field">
+            <label for="fldOut">Hora de salida</label>
+            <input type="time" id="fldOut">
+          </div>
+
+          <div class="toggle-row">
+            <label class="switch"><input type="checkbox" id="fldManual"><span class="slider"></span></label>
+            <span>Ingresar horas extras manualmente (sin usar entrada/salida)</span>
+          </div>
+
+          <div class="field" id="manualHoursWrap" style="display:none;">
+            <label for="fldManualH">Horas</label>
+            <input type="number" id="fldManualH" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field" id="manualMinutesWrap" style="display:none;">
+            <label for="fldManualM">Minutos</label>
+            <input type="number" id="fldManualM" min="0" max="59" step="1" placeholder="0">
+          </div>
+
+          <div class="auto-result" id="autoResult">
+            <span>Horas extra calculadas</span>
+            <span id="autoResultValue" class="tabular">0h 00m</span>
+          </div>
+
+          <div class="field">
+            <label for="fldType">Tipo de hora extra</label>
+            <select id="fldType">
+              <option value="normal">Día normal</option>
+              <option value="domingo">Domingo</option>
+              <option value="feriado">Día feriado</option>
+              <option value="nocturna">Nocturna</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fldStatus">Estado</label>
+            <select id="fldStatus">
+              <option value="pendiente">Pendiente</option>
+              <option value="pagada">Pagada</option>
+              <option value="aprobada">Aprobada</option>
+            </select>
+          </div>
+
+          <div class="money-result" id="moneyResult">
+            <span>Dinero estimado del registro</span>
+            <span id="moneyResultValue" class="tabular">RD$0.00</span>
+          </div>
+
+          <div class="field full">
+            <label for="fldNote">Descripción / nota</label>
+            <input type="text" id="fldNote" placeholder="Ej. Cierre de inventario">
+          </div>
+          <div class="field full">
+            <label for="fldObs">Observaciones</label>
+            <textarea id="fldObs" rows="2" placeholder="Detalles adicionales..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost hidden" id="btnCancelEdit">Cancelar edición</button>
+        <button type="button" class="btn btn-outline" id="btnCloseForm2">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitForm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     DETAILS MODAL
+============================================================ -->
+<div class="modal-overlay" id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="detailsModalTitle">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <h3 id="detailsModalTitle">Detalle del registro</h3>
+      <button class="icon-btn btn-sm" id="btnCloseDetails" aria-label="Cerrar detalle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="detailsBody"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-outline" id="btnDetailsEdit">Editar</button>
+      <button type="button" class="btn btn-outline" id="btnCloseDetails2">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CONFIRM MODAL
+============================================================ -->
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <h3 id="confirmTitle">¿Confirmar acción?</h3>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage" style="font-size:13.5px;color:var(--text-muted);margin:0;"></p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-outline" id="confirmCancel">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="confirmAccept">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     IMPORT CHOICE MODAL
+============================================================ -->
+<div class="modal-overlay" id="importModal" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <h3 id="importTitle">Importar respaldo</h3>
+    </div>
+    <div class="modal-body">
+      <p id="importMessage" style="font-size:13.5px;color:var(--text-muted);margin:0 0 12px;"></p>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;">
+        <strong>Combinar:</strong> agrega los registros importados a los actuales, evitando duplicados por ID.<br>
+        <strong>Reemplazar:</strong> sustituye por completo tus registros actuales por los del archivo.
+      </p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-outline" id="importCancel">Cancelar</button>
+      <button type="button" class="btn btn-outline" id="importCombine">Combinar</button>
+      <button type="button" class="btn btn-danger" id="importReplace">Reemplazar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+var STORAGE_KEY = "overtime_records_v1";
+var SETTINGS_KEY = "overtime_settings_v1";
+var THEME_KEY = "overtime_theme_v1";
+var BACKUP_KEY = "overtime_last_backup_v1";
+var DATA_VERSION = 2;
+
+var DOW_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+var DOW_SHORT = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+var MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+var TYPE_LABELS = {normal:"Día normal", domingo:"Domingo", feriado:"Día feriado", nocturna:"Nocturna"};
+var STATUS_LABELS = {pendiente:"Pendiente", pagada:"Pagada", aprobada:"Aprobada"};
+var VALID_TYPES = ["normal","domingo","feriado","nocturna"];
+var VALID_STATUSES = ["pendiente","pagada","aprobada"];
+var DEFAULT_MULTIPLIERS = {normal:1.5, domingo:2.0, feriado:2.0, nocturna:1.75};
+
+/* ============================================================
+   STATE
+============================================================ */
+var records = [];
+var settings = {
+  name:"", company:"", position:"", currency:"RD$",
+  rateNormal:"", multipliers: Object.assign({}, DEFAULT_MULTIPLIERS),
+  weekStart:"monday", timeFormat:"12"
+};
+var editingId = null;
+var duplicateSourceId = null;
+var pendingDeleteId = null;
+var pendingConfirmAction = null;
+var pendingImportData = null;
+var calYear, calMonth;
+var selectedDate = null;
+var sortState = {key:'date', dir:'desc'};
+
+var filters = {text:"", date:"", dateFrom:"", dateTo:"", status:"", type:"", month:"", year:""};
+
+/* ============================================================
+   UTILITIES
+============================================================ */
+function uid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+function parseDateLocal(dateStr){
+  // Parses 'YYYY-MM-DD' as a LOCAL date at midnight. Never use `new Date(dateStr)`
+  // directly for date-only strings: that parses as UTC and can roll back a day
+  // in negative-offset timezones. This helper avoids that entirely.
+  var parts = dateStr.split('-');
+  return new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+}
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
+function dowName(dateStr){
+  if(!dateStr) return "";
+  return DOW_NAMES[parseDateLocal(dateStr).getDay()];
+}
+function formatDateHuman(dateStr){
+  var d = parseDateLocal(dateStr);
+  return d.getDate()+' de '+MONTH_NAMES[d.getMonth()].toLowerCase()+' de '+d.getFullYear();
+}
+function formatDateShort(dateStr){
+  var d = parseDateLocal(dateStr);
+  return pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear();
+}
+
+function timeToMinutes(t){
+  if(!t) return null;
+  var parts = t.split(':');
+  return parseInt(parts[0],10)*60 + parseInt(parts[1],10);
+}
+function formatMinutes(totalMinutes){
+  totalMinutes = Math.max(0, Math.round(totalMinutes||0));
+  var h = Math.floor(totalMinutes/60);
+  var m = totalMinutes % 60;
+  return h + 'h ' + pad2(m) + 'm';
+}
+function minutesToDecimal(totalMinutes){
+  return (Math.max(0,totalMinutes||0)/60).toFixed(2);
+}
+function formatTimeDisplay(t){
+  if(!t) return '—';
+  var parts = t.split(':');
+  var h = parseInt(parts[0],10), m = parts[1];
+  if(settings.timeFormat === '24'){ return pad2(h) + ':' + m; }
+  var suffix = h >= 12 ? 'PM' : 'AM';
+  var h12 = h % 12; if(h12===0) h12=12;
+  return h12 + ':' + m + ' ' + suffix;
+}
+function computeAutoMinutes(timeIn, timeOut){
+  if(!timeIn || !timeOut) return null;
+  var inM = timeToMinutes(timeIn), outM = timeToMinutes(timeOut);
+  var diff = outM - inM;
+  if(diff <= 0) diff += 24*60; // overnight shift crossing midnight
+  return diff;
+}
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+function formatMoney(amount){
+  amount = isFinite(amount) ? amount : 0;
+  return (settings.currency||'RD$') + amount.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function getMultiplier(type){
+  var m = settings.multipliers && settings.multipliers[type];
+  return (typeof m === 'number' && !isNaN(m)) ? m : (DEFAULT_MULTIPLIERS[type]||1);
+}
+function recordMoney(r){
+  var rate = parseFloat(settings.rateNormal);
+  if(isNaN(rate) || rate <= 0) return 0;
+  return (r.minutes/60) * rate * getMultiplier(r.type);
+}
+function rateConfigured(){
+  var rate = parseFloat(settings.rateNormal);
+  return !isNaN(rate) && rate > 0;
+}
+function weekStartIndex(){ return settings.weekStart === 'sunday' ? 0 : 1; }
+
+/* ============================================================
+   VALIDATION
+============================================================ */
+function isValidRecord(r){
+  if(!r || typeof r !== 'object') return false;
+  if(!r.id || !r.date || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return false;
+  if(typeof r.minutes !== 'number' || isNaN(r.minutes) || r.minutes < 0) return false;
+  if(VALID_TYPES.indexOf(r.type) === -1) return false;
+  if(VALID_STATUSES.indexOf(r.status) === -1) return false;
+  return true;
+}
+function sanitizeRecord(r){
+  return {
+    id: String(r.id),
+    date: r.date,
+    timeIn: r.timeIn || '',
+    timeOut: r.timeOut || '',
+    minutes: Math.round(r.minutes),
+    manual: !!r.manual,
+    type: r.type,
+    status: r.status,
+    note: (r.note || '').toString().slice(0,300),
+    observations: (r.observations || '').toString().slice(0,1000),
+    sample: !!r.sample,
+    createdAt: r.createdAt || new Date().toISOString(),
+    updatedAt: r.updatedAt || new Date().toISOString()
+  };
+}
+
+/* ============================================================
+   PERSISTENCE
+============================================================ */
+function loadRecords(){
+  var raw = localStorage.getItem(STORAGE_KEY);
+  if(raw === null){
+    records = sampleRecords();
+    saveRecords(true);
+    return;
+  }
+  try{
+    var parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed)) throw new Error('formato inválido');
+    var clean = [];
+    var corrupted = 0;
+    parsed.forEach(function(r){
+      if(isValidRecord(r)) clean.push(sanitizeRecord(r));
+      else corrupted++;
+    });
+    records = clean;
+    if(corrupted > 0){
+      saveRecords(true);
+      setTimeout(function(){
+        toast('Se encontraron '+corrupted+' registro(s) dañado(s) y fueron omitidos para proteger tus datos.', 'warning');
+      }, 400);
+    }
+  }catch(e){
+    records = [];
+    setTimeout(function(){
+      toast('No se pudieron leer tus datos guardados. Se inició una base vacía para evitar errores.', 'danger');
+    }, 400);
+  }
+}
+function saveRecords(silent){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    if(!silent) flashSaveIndicator();
+  }catch(e){
+    toast('No se pudo guardar en este navegador (almacenamiento lleno o bloqueado).', 'danger');
+  }
+}
+function flashSaveIndicator(){
+  var el = document.getElementById('saveIndicator');
+  el.classList.add('show');
+  clearTimeout(flashSaveIndicator._t);
+  flashSaveIndicator._t = setTimeout(function(){ el.classList.remove('show'); }, 1600);
+}
+
+function loadSettings(){
+  var raw = localStorage.getItem(SETTINGS_KEY);
+  if(raw){
+    try{
+      var parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object'){
+        settings = Object.assign({}, settings, parsed);
+        settings.multipliers = Object.assign({}, DEFAULT_MULTIPLIERS, parsed.multipliers || {});
+        // migrate legacy single "rateExtra" field from older versions
+        if(parsed.rateExtra && !parsed.multipliers){
+          var rn = parseFloat(parsed.rateNormal), re = parseFloat(parsed.rateExtra);
+          if(!isNaN(rn) && rn > 0 && !isNaN(re) && re > 0){
+            settings.multipliers.normal = +(re/rn).toFixed(2);
+          }
+        }
+      }
+    }catch(e){
+      toast('La configuración guardada estaba dañada; se restauraron los valores por defecto.', 'warning');
+    }
+  }
+}
+function saveSettings(){
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+  catch(e){ toast('No se pudo guardar la configuración.', 'danger'); }
+}
+function loadTheme(){
+  var t = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(t);
+}
+function applyTheme(t){
+  if(t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem(THEME_KEY, t);
+  var icon = document.getElementById('themeIcon');
+  icon.innerHTML = (t === 'dark')
+    ? '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'
+    : '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>';
+}
+
+function sampleRecords(){
+  var now = new Date().toISOString();
+  return [
+    {id:uid(),date:'2026-08-10',timeIn:'18:00',timeOut:'22:00',minutes:240,manual:false,type:'normal',status:'pendiente',note:'Cierre de mes',observations:'',sample:true,createdAt:now,updatedAt:now},
+    {id:uid(),date:'2026-08-08',timeIn:'08:00',timeOut:'12:00',minutes:240,manual:false,type:'normal',status:'pagada',note:'Inventario de bodega',observations:'Aprobado por supervisor',sample:true,createdAt:now,updatedAt:now},
+    {id:uid(),date:'2026-08-02',timeIn:'18:00',timeOut:'22:30',minutes:270,manual:false,type:'nocturna',status:'aprobada',note:'Soporte turno noche',observations:'',sample:true,createdAt:now,updatedAt:now}
+  ];
+}
+
+/* ============================================================
+   TOASTS
+============================================================ */
+function toast(msg, type){
+  var container = document.getElementById('toast-container');
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(function(){
+    el.style.transition = 'opacity .3s ease';
+    el.style.opacity = '0';
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 3200);
+}
+
+/* ============================================================
+   CONFIRM MODAL
+============================================================ */
+function openConfirm(title, message, onAccept, acceptLabel){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmAccept').textContent = acceptLabel || 'Sí, continuar';
+  pendingConfirmAction = onAccept;
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm(){
+  document.getElementById('confirmModal').classList.remove('open');
+  pendingConfirmAction = null;
+}
+
+/* ============================================================
+   STATS
+============================================================ */
+function getWeekRange(refDate){
+  var d = new Date(refDate);
+  var day = d.getDay();
+  var wsi = weekStartIndex();
+  var diff = (day - wsi + 7) % 7;
+  var start = new Date(d); start.setDate(d.getDate()-diff); start.setHours(0,0,0,0);
+  var end = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+  return {start:start, end:end};
+}
+
+function computeStats(list){
+  list = list || records;
+  var now = new Date();
+  var week = getWeekRange(now);
+  var totalMin=0, weekMin=0, monthMin=0, pendingMin=0, paidMin=0, approvedMin=0;
+  var moneyTotal=0, moneyPending=0, moneyPaid=0;
+  var daysSet = {};
+
+  list.forEach(function(r){
+    var mins = r.minutes || 0;
+    var money = recordMoney(r);
+    totalMin += mins;
+    moneyTotal += money;
+    daysSet[r.date] = true;
+
+    var d = parseDateLocal(r.date);
+    if(d >= week.start && d <= week.end) weekMin += mins;
+    if(d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) monthMin += mins;
+
+    if(r.status === 'pendiente'){ pendingMin += mins; moneyPending += money; }
+    else if(r.status === 'aprobada'){ approvedMin += mins; moneyPending += money; }
+    else if(r.status === 'pagada'){ paidMin += mins; moneyPaid += money; }
+  });
+
+  return {
+    totalMin:totalMin, weekMin:weekMin, monthMin:monthMin,
+    pendingMin:pendingMin, paidMin:paidMin, approvedMin:approvedMin,
+    moneyTotal:moneyTotal, moneyPending:moneyPending, moneyPaid:moneyPaid,
+    days: Object.keys(daysSet).length
+  };
+}
+
+function statIcon(pathHtml){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+pathHtml+'</svg>';
+}
+
+function renderStats(){
+  var s = computeStats();
+  var grid = document.getElementById('statsGrid');
+  var showMoney = rateConfigured();
+
+  var cards = [
+    {cls:'c-total', label:'Total horas', value: formatMinutes(s.totalMin), sub: minutesToDecimal(s.totalMin)+' h decimales', icon: statIcon('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/>')},
+    {cls:'c-week', label:'Esta semana', value: formatMinutes(s.weekMin), sub: minutesToDecimal(s.weekMin)+' h', icon: statIcon('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/>')},
+    {cls:'c-month', label:'Este mes', value: formatMinutes(s.monthMin), sub: minutesToDecimal(s.monthMin)+' h', icon: statIcon('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/>')},
+    {cls:'c-days', label:'Días con horas extra', value: s.days, sub: 'registrados en total', icon: statIcon('<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>')},
+    {cls:'c-pending', label:'Horas pendientes', value: formatMinutes(s.pendingMin), sub: minutesToDecimal(s.pendingMin)+' h', icon: statIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>')},
+    {cls:'c-approved', label:'Horas aprobadas', value: formatMinutes(s.approvedMin), sub: minutesToDecimal(s.approvedMin)+' h', icon: statIcon('<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>')},
+    {cls:'c-paid', label:'Horas pagadas', value: formatMinutes(s.paidMin), sub: minutesToDecimal(s.paidMin)+' h', icon: statIcon('<path d="M20 6L9 17l-5-5"/>')}
+  ];
+
+  var html = cards.map(function(c){
+    return '<div class="stat-card '+c.cls+'"><div class="stat-card-top"><span class="stat-label">'+c.label+'</span><span class="stat-icon" aria-hidden="true">'+c.icon+'</span></div><div class="stat-value tabular">'+c.value+'</div><div class="stat-sub">'+c.sub+'</div></div>';
+  }).join('');
+
+  if(showMoney){
+    var moneyCards = [
+      {cls:'c-money-total', label:'Dinero estimado', value: formatMoney(s.moneyTotal), sub:'total acumulado', icon: statIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1-1.5 3-1.5s3 .8 3 2-1.2 1.8-3 2-3 1-3 2 1.2 1.5 3 1.5 3-.5 3-1.5"/>')},
+      {cls:'c-money-pending', label:'Dinero pendiente de pago', value: formatMoney(s.moneyPending), sub:'pendiente + aprobado', icon: statIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>')},
+      {cls:'c-money-paid', label:'Dinero ya pagado', value: formatMoney(s.moneyPaid), sub:'liquidado', icon: statIcon('<path d="M20 6L9 17l-5-5"/>')}
+    ];
+    html += moneyCards.map(function(c){
+      return '<div class="stat-card '+c.cls+'"><div class="stat-card-top"><span class="stat-label">'+c.label+'</span><span class="stat-icon" aria-hidden="true">'+c.icon+'</span></div><div class="stat-value tabular">'+c.value+'</div><div class="stat-sub">'+c.sub+'</div></div>';
+    }).join('');
+  }
+
+  grid.innerHTML = html;
+  document.getElementById('lastUpdated').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ============================================================
+   CALENDAR
+============================================================ */
+function renderCalendarDow(){
+  var wsi = weekStartIndex();
+  var rotated = DOW_SHORT.slice(wsi).concat(DOW_SHORT.slice(0,wsi));
+  document.getElementById('calDow').innerHTML = rotated.map(function(d){ return '<div class="cal-dow">'+d+'</div>'; }).join('');
+}
+
+function minutesForDate(dateStr){
+  return records.filter(function(r){ return r.date === dateStr; }).reduce(function(sum,r){ return sum + (r.minutes||0); }, 0);
+}
+function moneyForDate(dateStr){
+  return records.filter(function(r){ return r.date === dateStr; }).reduce(function(sum,r){ return sum + recordMoney(r); }, 0);
+}
+
+function renderCalendar(){
+  document.getElementById('calTitle').textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
+
+  var grid = document.getElementById('calGrid');
+  var firstDay = new Date(calYear, calMonth, 1);
+  var wsi = weekStartIndex();
+  var startOffset = (firstDay.getDay() - wsi + 7) % 7;
+  var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  var todayS = todayStr();
+
+  var html = '';
+  for(var i=0;i<startOffset;i++){ html += '<div class="cal-day empty"></div>'; }
+
+  for(var day=1; day<=daysInMonth; day++){
+    var dateStr = calYear+'-'+pad2(calMonth+1)+'-'+pad2(day);
+    var mins = minutesForDate(dateStr);
+    var hasData = mins > 0;
+    var classes = ['cal-day','clickable'];
+    if(dateStr === todayS) classes.push('today');
+    if(hasData) classes.push('has-data');
+    if(dateStr === selectedDate) classes.push('selected');
+    html += '<button type="button" class="'+classes.join(' ')+'" data-date="'+dateStr+'" aria-label="'+formatDateHuman(dateStr)+(hasData?', '+formatMinutes(mins)+' registradas':'')+'">' +
+              '<span class="cal-day-num">'+day+'</span>' +
+              (hasData ? '<span class="cal-day-badge">'+formatMinutes(mins)+'</span>' : '') +
+            '</button>';
+  }
+  grid.innerHTML = html;
+
+  Array.prototype.forEach.call(grid.querySelectorAll('.cal-day.clickable'), function(el){
+    el.addEventListener('click', function(){
+      var d = el.getAttribute('data-date');
+      selectedDate = (selectedDate === d) ? null : d;
+      renderCalendar();
+      renderDayDetail();
+    });
+  });
+
+  renderCalendarSummary();
+}
+
+function renderCalendarSummary(){
+  var monthTotal = 0, monthMoney = 0, monthDays = {};
+  records.forEach(function(r){
+    var d = parseDateLocal(r.date);
+    if(d.getFullYear() === calYear && d.getMonth() === calMonth){
+      monthTotal += (r.minutes||0);
+      monthMoney += recordMoney(r);
+      monthDays[r.date] = true;
+    }
+  });
+  var el = document.getElementById('calSummary');
+  var html =
+    '<div class="cal-summary-row"><span>Total del mes</span><b class="tabular">'+formatMinutes(monthTotal)+'</b></div>' +
+    '<div class="cal-summary-row"><span>Equivalente decimal</span><b class="tabular">'+minutesToDecimal(monthTotal)+' h</b></div>' +
+    '<div class="cal-summary-row"><span>Días con registros</span><b>'+Object.keys(monthDays).length+'</b></div>';
+  if(rateConfigured()){
+    html += '<div class="cal-summary-row"><span>Dinero del mes</span><b class="tabular">'+formatMoney(monthMoney)+'</b></div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderDayDetail(){
+  var wrap = document.getElementById('dayDetail');
+  if(!selectedDate){
+    wrap.innerHTML = '<p class="day-detail-empty">Selecciona un día del calendario para ver el detalle.</p>';
+    return;
+  }
+  var dayRecords = records.filter(function(r){ return r.date === selectedDate; });
+  var dayMoney = moneyForDate(selectedDate);
+
+  var head = '<div class="day-detail-head"><h4>'+formatDateHuman(selectedDate)+'</h4>' +
+    '<button type="button" class="btn btn-outline btn-sm" id="btnAddForDay">+ Agregar registro</button></div>';
+
+  var summary = '';
+  if(dayRecords.length){
+    summary = '<p class="day-detail-empty" style="margin-bottom:8px;">Total: <strong class="tabular">'+formatMinutes(minutesForDate(selectedDate))+'</strong>' +
+      (rateConfigured() ? ' · <strong class="tabular">'+formatMoney(dayMoney)+'</strong>' : '') + '</p>';
+  }
+
+  if(dayRecords.length === 0){
+    wrap.innerHTML = head + '<p class="day-detail-empty">Sin horas extra registradas este día.</p>';
+  } else {
+    var entries = dayRecords.map(function(r){
+      return '<div class="day-entry" data-id="'+r.id+'" tabindex="0" role="button" aria-label="Editar registro de '+formatTimeDisplay(r.timeIn)+' a '+formatTimeDisplay(r.timeOut)+'">' +
+        '<div class="day-entry-top"><span>'+formatTimeDisplay(r.timeIn)+' — '+formatTimeDisplay(r.timeOut)+'</span><span class="day-entry-hours tabular">'+formatMinutes(r.minutes)+'</span></div>' +
+        '<div class="day-entry-meta"><span>'+TYPE_LABELS[r.type]+' · '+STATUS_LABELS[r.status]+(r.note ? ' · '+escapeHtml(r.note) : '')+'</span>' +
+        (rateConfigured() ? '<span class="tabular">'+formatMoney(recordMoney(r))+'</span>' : '') + '</div>' +
+      '</div>';
+    }).join('');
+    wrap.innerHTML = head + summary + entries;
+
+    Array.prototype.forEach.call(wrap.querySelectorAll('.day-entry'), function(el){
+      var open = function(){ openForm(el.getAttribute('data-id')); };
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); open(); } });
+    });
+  }
+
+  var addBtn = document.getElementById('btnAddForDay');
+  if(addBtn) addBtn.addEventListener('click', function(){ openForm(null, selectedDate); });
+}
+
+/* ============================================================
+   FILTERS
+============================================================ */
+function populateFilterSelectors(){
+  var monthSel = document.getElementById('fMonth');
+  var repDateEl = document.getElementById('repDate');
+  monthSel.innerHTML = '<option value="">Todos</option>';
+  MONTH_NAMES.forEach(function(m, idx){
+    var opt = document.createElement('option');
+    opt.value = idx+1; opt.textContent = m;
+    monthSel.appendChild(opt);
+  });
+
+  var years = {};
+  records.forEach(function(r){ years[parseDateLocal(r.date).getFullYear()] = true; });
+  years[new Date().getFullYear()] = true;
+  var yearSel = document.getElementById('fYear');
+  yearSel.innerHTML = '<option value="">Todos</option>';
+  Object.keys(years).sort(function(a,b){return b-a;}).forEach(function(y){
+    var opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    yearSel.appendChild(opt);
+  });
+
+  if(repDateEl && !repDateEl.value) repDateEl.value = todayStr();
+}
+
+function applyFilters(list){
+  return list.filter(function(r){
+    if(filters.text){
+      var t = filters.text.toLowerCase();
+      var hay = ((r.note||'') + ' ' + (r.observations||'')).toLowerCase();
+      if(hay.indexOf(t) === -1) return false;
+    }
+    if(filters.date && r.date !== filters.date) return false;
+    if(filters.dateFrom && r.date < filters.dateFrom) return false;
+    if(filters.dateTo && r.date > filters.dateTo) return false;
+    if(filters.status && r.status !== filters.status) return false;
+    if(filters.type && r.type !== filters.type) return false;
+    if(filters.month || filters.year){
+      var d = parseDateLocal(r.date);
+      if(filters.month && (d.getMonth()+1) !== parseInt(filters.month,10)) return false;
+      if(filters.year && d.getFullYear() !== parseInt(filters.year,10)) return false;
+    }
+    return true;
+  });
+}
+
+function readFiltersFromForm(){
+  filters.text = document.getElementById('fText').value.trim();
+  filters.date = document.getElementById('fDate').value;
+  filters.dateFrom = document.getElementById('fDateFrom').value;
+  filters.dateTo = document.getElementById('fDateTo').value;
+  filters.status = document.getElementById('fStatus').value;
+  filters.type = document.getElementById('fType').value;
+  filters.month = document.getElementById('fMonth').value;
+  filters.year = document.getElementById('fYear').value;
+  syncFilterChips();
+}
+function syncFilterChips(){
+  document.getElementById('chipPagadas').classList.toggle('active', filters.status === 'pagada');
+  document.getElementById('chipPendientes').classList.toggle('active', filters.status === 'pendiente');
+}
+function clearFilters(){
+  filters = {text:"",date:"",dateFrom:"",dateTo:"",status:"",type:"",month:"",year:""};
+  ['fText','fDate','fDateFrom','fDateTo','fStatus','fType','fMonth','fYear'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  syncFilterChips();
+  renderTable();
+}
+
+/* ============================================================
+   TABLE / SORTING
+============================================================ */
+function getSortedFiltered(){
+  var list = applyFilters(records.slice());
+  var key = sortState.key, dir = sortState.dir === 'asc' ? 1 : -1;
+  list.sort(function(a,b){
+    var av, bv;
+    if(key === 'date'){
+      av = a.date + (a.timeIn||''); bv = b.date + (b.timeIn||'');
+      return av < bv ? -1*dir : av > bv ? 1*dir : 0;
+    }
+    if(key === 'minutes'){ av = a.minutes; bv = b.minutes; }
+    else if(key === 'money'){ av = recordMoney(a); bv = recordMoney(b); }
+    else if(key === 'type'){ av = TYPE_LABELS[a.type]; bv = TYPE_LABELS[b.type]; }
+    else if(key === 'status'){ av = STATUS_LABELS[a.status]; bv = STATUS_LABELS[b.status]; }
+    else { av = a[key]; bv = b[key]; }
+    if(av < bv) return -1*dir;
+    if(av > bv) return 1*dir;
+    return 0;
+  });
+  return list;
+}
+
+function updateSortHeaders(){
+  Array.prototype.forEach.call(document.querySelectorAll('th.sortable'), function(th){
+    var key = th.getAttribute('data-sort');
+    var arrow = th.querySelector('.sort-arrow');
+    if(key === sortState.key){
+      th.classList.add('sorted');
+      arrow.textContent = sortState.dir === 'asc' ? '▲' : '▼';
+    } else {
+      th.classList.remove('sorted');
+      arrow.textContent = '';
+    }
+  });
+}
+
+function statusBadge(status){
+  return '<span class="badge badge-'+status+'"><span class="badge-dot"></span>'+STATUS_LABELS[status]+'</span>';
+}
+function statusSelectHtml(r){
+  return '<select class="status-select badge-'+r.status+'" data-action="status" data-id="'+r.id+'" aria-label="Cambiar estado del registro">' +
+    VALID_STATUSES.map(function(s){ return '<option value="'+s+'"'+(s===r.status?' selected':'')+'>'+STATUS_LABELS[s]+'</option>'; }).join('') +
+    '</select>';
+}
+
+function renderTable(){
+  var list = getSortedFiltered();
+  var body = document.getElementById('recordsBody');
+  var cardsWrap = document.getElementById('recordsCards');
+  var empty = document.getElementById('emptyState');
+  updateSortHeaders();
+
+  if(list.length === 0){
+    body.innerHTML = '';
+    cardsWrap.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  var showMoney = rateConfigured();
+
+  body.innerHTML = list.map(function(r){
+    var money = recordMoney(r);
+    return '<tr>' +
+      '<td class="tabular">'+formatDateShort(r.date)+'</td>' +
+      '<td>'+dowName(r.date)+'</td>' +
+      '<td class="tabular">'+formatTimeDisplay(r.timeIn)+'</td>' +
+      '<td class="tabular">'+formatTimeDisplay(r.timeOut)+'</td>' +
+      '<td class="tabular"><strong>'+formatMinutes(r.minutes)+'</strong></td>' +
+      '<td><span class="badge badge-type">'+TYPE_LABELS[r.type]+'</span></td>' +
+      '<td>'+statusSelectHtml(r)+'</td>' +
+      '<td class="tabular money-cell">'+(showMoney ? formatMoney(money) : '—')+'</td>' +
+      '<td>'+(r.note ? escapeHtml(r.note) : '<span style="color:var(--text-muted)">—</span>')+'</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="icon-btn" data-action="view" data-id="'+r.id+'" title="Ver detalles" aria-label="Ver detalles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>' +
+        '<button class="icon-btn" data-action="edit" data-id="'+r.id+'" title="Editar" aria-label="Editar registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+        '<button class="icon-btn" data-action="duplicate" data-id="'+r.id+'" title="Duplicar" aria-label="Duplicar registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+        '<button class="icon-btn danger-hover" data-action="delete" data-id="'+r.id+'" title="Eliminar" aria-label="Eliminar registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+
+  cardsWrap.innerHTML = list.map(function(r){
+    var money = recordMoney(r);
+    return '<div class="record-card">' +
+      '<div class="record-card-top">' +
+        '<div><div class="record-card-date tabular">'+formatDateShort(r.date)+'</div><div class="record-card-dow">'+dowName(r.date)+'</div></div>' +
+        '<div class="record-card-date tabular" style="color:var(--primary);">'+formatMinutes(r.minutes)+'</div>' +
+      '</div>' +
+      '<div class="record-card-rows">' +
+        '<div class="record-card-row"><span>Horario</span><b class="tabular">'+formatTimeDisplay(r.timeIn)+' – '+formatTimeDisplay(r.timeOut)+'</b></div>' +
+        (showMoney ? '<div class="record-card-row"><span>Dinero</span><b class="tabular">'+formatMoney(money)+'</b></div>' : '') +
+        (r.note ? '<div class="record-card-row"><span>Nota</span><b>'+escapeHtml(r.note)+'</b></div>' : '') +
+      '</div>' +
+      '<div class="record-card-badges"><span class="badge badge-type">'+TYPE_LABELS[r.type]+'</span>'+statusSelectHtml(r)+'</div>' +
+      '<div class="record-card-actions">' +
+        '<button class="icon-btn" data-action="view" data-id="'+r.id+'" aria-label="Ver detalles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>' +
+        '<button class="icon-btn" data-action="edit" data-id="'+r.id+'" aria-label="Editar registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+        '<button class="icon-btn" data-action="duplicate" data-id="'+r.id+'" aria-label="Duplicar registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+        '<button class="icon-btn danger-hover" data-action="delete" data-id="'+r.id+'" aria-label="Eliminar registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  [body, cardsWrap].forEach(function(container){
+    Array.prototype.forEach.call(container.querySelectorAll('button[data-action]'), function(btn){
+      var id = btn.getAttribute('data-id');
+      var action = btn.getAttribute('data-action');
+      btn.addEventListener('click', function(){
+        if(action === 'edit') openForm(id);
+        else if(action === 'delete') confirmDelete(id);
+        else if(action === 'view') openDetails(id);
+        else if(action === 'duplicate') duplicateRecord(id);
+      });
+    });
+    Array.prototype.forEach.call(container.querySelectorAll('select[data-action="status"]'), function(sel){
+      sel.addEventListener('change', function(){
+        quickUpdateStatus(sel.getAttribute('data-id'), sel.value);
+      });
+      sel.addEventListener('click', function(e){ e.stopPropagation(); });
+    });
+  });
+}
+
+function quickUpdateStatus(id, newStatus){
+  var idx = records.findIndex(function(r){ return r.id === id; });
+  if(idx === -1) return;
+  records[idx].status = newStatus;
+  records[idx].updatedAt = new Date().toISOString();
+  saveRecords();
+  refreshAll();
+  toast('Estado actualizado a "'+STATUS_LABELS[newStatus]+'".', 'success');
+}
+
+function bindSortHeaders(){
+  Array.prototype.forEach.call(document.querySelectorAll('th.sortable'), function(th){
+    th.addEventListener('click', function(){
+      var key = th.getAttribute('data-sort');
+      if(sortState.key === key){
+        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState.key = key; sortState.dir = key === 'date' ? 'desc' : 'desc';
+      }
+      renderTable();
+    });
+  });
+}
+
+/* ============================================================
+   FORM MODAL
+============================================================ */
+function openForm(id, presetDate){
+  editingId = id || null;
+  duplicateSourceId = null;
+  document.getElementById('formError').classList.remove('show');
+  document.getElementById('formError').textContent = '';
+
+  var record = editingId ? records.find(function(r){ return r.id === editingId; }) : null;
+
+  document.getElementById('formModalTitle').textContent = record ? 'Editar registro' : 'Agregar horas extras';
+  document.getElementById('btnSubmitForm').innerHTML =
+    (record
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Actualizar'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Guardar');
+  document.getElementById('btnCancelEdit').classList.toggle('hidden', !record);
+
+  document.getElementById('fldDate').value = record ? record.date : (presetDate || selectedDate || todayStr());
+  document.getElementById('fldIn').value = record ? (record.timeIn||'') : '';
+  document.getElementById('fldOut').value = record ? (record.timeOut||'') : '';
+  document.getElementById('fldManual').checked = record ? !!record.manual : false;
+  document.getElementById('fldManualH').value = record && record.manual ? Math.floor(record.minutes/60) : '';
+  document.getElementById('fldManualM').value = record && record.manual ? (record.minutes%60) : '';
+  document.getElementById('fldType').value = record ? record.type : 'normal';
+  document.getElementById('fldStatus').value = record ? record.status : 'pendiente';
+  document.getElementById('fldNote').value = record ? (record.note||'') : '';
+  document.getElementById('fldObs').value = record ? (record.observations||'') : '';
+
+  updateDowField();
+  updateManualVisibility();
+  updateAutoResult();
+
+  document.getElementById('formModal').classList.add('open');
+  document.getElementById('fldDate').focus();
+}
+
+function closeForm(){
+  document.getElementById('formModal').classList.remove('open');
+  editingId = null;
+  duplicateSourceId = null;
+}
+
+function updateDowField(){
+  var date = document.getElementById('fldDate').value;
+  document.getElementById('fldDow').value = date ? dowName(date) : '';
+}
+
+function updateManualVisibility(){
+  var manual = document.getElementById('fldManual').checked;
+  document.getElementById('manualHoursWrap').style.display = manual ? 'flex' : 'none';
+  document.getElementById('manualMinutesWrap').style.display = manual ? 'flex' : 'none';
+  document.getElementById('autoResult').style.display = manual ? 'none' : 'flex';
+  document.getElementById('fldIn').disabled = manual;
+  document.getElementById('fldOut').disabled = manual;
+  updateMoneyResult();
+}
+
+function updateAutoResult(){
+  var timeIn = document.getElementById('fldIn').value;
+  var timeOut = document.getElementById('fldOut').value;
+  var mins = computeAutoMinutes(timeIn, timeOut);
+  document.getElementById('autoResultValue').textContent = mins != null ? formatMinutes(mins) : '0h 00m';
+  updateMoneyResult();
+}
+
+function currentFormMinutes(){
+  var manual = document.getElementById('fldManual').checked;
+  if(manual){
+    var h = parseInt(document.getElementById('fldManualH').value,10) || 0;
+    var m = parseInt(document.getElementById('fldManualM').value,10) || 0;
+    return h*60 + m;
+  }
+  return computeAutoMinutes(document.getElementById('fldIn').value, document.getElementById('fldOut').value);
+}
+
+function updateMoneyResult(){
+  var wrap = document.getElementById('moneyResult');
+  if(!rateConfigured()){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  var mins = currentFormMinutes() || 0;
+  var type = document.getElementById('fldType').value;
+  var rate = parseFloat(settings.rateNormal) || 0;
+  var money = (mins/60) * rate * getMultiplier(type);
+  document.getElementById('moneyResultValue').textContent = formatMoney(money);
+}
+
+function showFormError(msg){
+  var box = document.getElementById('formError');
+  box.textContent = msg;
+  box.classList.add('show');
+}
+
+function handleFormSubmit(e){
+  e.preventDefault();
+  var box = document.getElementById('formError');
+  box.classList.remove('show'); box.textContent = '';
+
+  var date = document.getElementById('fldDate').value;
+  var manual = document.getElementById('fldManual').checked;
+  var timeIn = document.getElementById('fldIn').value;
+  var timeOut = document.getElementById('fldOut').value;
+
+  if(!date){ showFormError('Debes seleccionar una fecha.'); return; }
+
+  var minutes;
+  if(manual){
+    var h = document.getElementById('fldManualH').value;
+    var m = document.getElementById('fldManualM').value;
+    h = h === '' ? 0 : parseInt(h,10);
+    m = m === '' ? 0 : parseInt(m,10);
+    if(isNaN(h) || isNaN(m) || h < 0 || m < 0){ showFormError('Las horas ingresadas no son válidas.'); return; }
+    minutes = h*60+m;
+    if(minutes <= 0){ showFormError('Debes ingresar una cantidad de horas mayor a cero.'); return; }
+  } else {
+    if(!timeIn || !timeOut){ showFormError('Debes indicar hora de entrada y salida, o activar el ingreso manual.'); return; }
+    minutes = computeAutoMinutes(timeIn, timeOut);
+    if(minutes == null || minutes <= 0){ showFormError('El rango de horas ingresado no es válido.'); return; }
+  }
+
+  var isDuplicate = records.some(function(r){
+    if(editingId && r.id === editingId) return false;
+    return !manual && r.date === date && r.timeIn === timeIn && r.timeOut === timeOut;
+  });
+
+  var payload = {
+    date: date,
+    timeIn: manual ? '' : timeIn,
+    timeOut: manual ? '' : timeOut,
+    minutes: minutes,
+    manual: manual,
+    type: document.getElementById('fldType').value,
+    status: document.getElementById('fldStatus').value,
+    note: document.getElementById('fldNote').value.trim(),
+    observations: document.getElementById('fldObs').value.trim(),
+    sample: false,
+    updatedAt: new Date().toISOString()
+  };
+
+  function persist(){
+    if(editingId){
+      var idx = records.findIndex(function(r){ return r.id === editingId; });
+      if(idx > -1){ records[idx] = Object.assign({}, records[idx], payload, {sample:false}); }
+      toast('Registro actualizado correctamente.', 'success');
+    } else {
+      payload.id = uid();
+      payload.createdAt = new Date().toISOString();
+      records.push(payload);
+      toast('Horas extra guardadas correctamente.', 'success');
+    }
+    saveRecords();
+    closeForm();
+    refreshAll();
+  }
+
+  if(isDuplicate){
+    openConfirm('Registro similar encontrado', 'Ya existe un registro con la misma fecha y horario. ¿Deseas guardarlo de todas formas?', function(){ closeConfirm(); persist(); }, 'Guardar de todas formas');
+    return;
+  }
+  persist();
+}
+
+/* ============================================================
+   DUPLICATE
+============================================================ */
+function duplicateRecord(id){
+  var r = records.find(function(x){ return x.id === id; });
+  if(!r) return;
+  editingId = null;
+  document.getElementById('formError').classList.remove('show');
+  document.getElementById('formModalTitle').textContent = 'Duplicar registro';
+  document.getElementById('btnSubmitForm').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Guardar copia';
+  document.getElementById('btnCancelEdit').classList.add('hidden');
+
+  document.getElementById('fldDate').value = r.date;
+  document.getElementById('fldIn').value = r.timeIn||'';
+  document.getElementById('fldOut').value = r.timeOut||'';
+  document.getElementById('fldManual').checked = !!r.manual;
+  document.getElementById('fldManualH').value = r.manual ? Math.floor(r.minutes/60) : '';
+  document.getElementById('fldManualM').value = r.manual ? (r.minutes%60) : '';
+  document.getElementById('fldType').value = r.type;
+  document.getElementById('fldStatus').value = r.status;
+  document.getElementById('fldNote').value = r.note||'';
+  document.getElementById('fldObs').value = r.observations||'';
+
+  updateDowField();
+  updateManualVisibility();
+  updateAutoResult();
+
+  document.getElementById('formModal').classList.add('open');
+  document.getElementById('fldDate').focus();
+  toast('Ajusta la fecha u otros datos y guarda para crear la copia.', 'warning');
+}
+
+/* ============================================================
+   DETAILS MODAL
+============================================================ */
+function openDetails(id){
+  var r = records.find(function(x){ return x.id === id; });
+  if(!r) return;
+  var body = document.getElementById('detailsBody');
+  var rows = [
+    ['Fecha', formatDateHuman(r.date)],
+    ['Día', dowName(r.date)],
+    ['Entrada', formatTimeDisplay(r.timeIn)],
+    ['Salida', formatTimeDisplay(r.timeOut)],
+    ['Horas extra', formatMinutes(r.minutes) + ' ('+minutesToDecimal(r.minutes)+' h)'],
+    ['Tipo', TYPE_LABELS[r.type]],
+    ['Estado', STATUS_LABELS[r.status]]
+  ];
+  if(rateConfigured()) rows.push(['Dinero estimado', formatMoney(recordMoney(r))]);
+  rows.push(['Nota', r.note || '—']);
+  rows.push(['Observaciones', r.observations || '—']);
+
+  body.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;">' +
+    rows.map(function(pair){
+      return '<div style="display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:8px;">' +
+        '<span style="color:var(--text-muted);">'+pair[0]+'</span><strong style="text-align:right;">'+escapeHtml(String(pair[1]))+'</strong></div>';
+    }).join('') + '</div>';
+
+  document.getElementById('btnDetailsEdit').onclick = function(){ closeDetails(); openForm(id); };
+  document.getElementById('detailsModal').classList.add('open');
+}
+function closeDetails(){ document.getElementById('detailsModal').classList.remove('open'); }
+
+/* ============================================================
+   DELETE
+============================================================ */
+function confirmDelete(id){
+  pendingDeleteId = id;
+  openConfirm('Eliminar registro', '¿Seguro que deseas eliminar este registro de horas extra? Esta acción no se puede deshacer.', function(){
+    records = records.filter(function(r){ return r.id !== pendingDeleteId; });
+    saveRecords();
+    closeConfirm();
+    refreshAll();
+    toast('Registro eliminado.', 'danger');
+  }, 'Sí, eliminar');
+}
+
+/* ============================================================
+   SETTINGS
+============================================================ */
+function renderSettingsForm(){
+  document.getElementById('setName').value = settings.name || '';
+  document.getElementById('setCompany').value = settings.company || '';
+  document.getElementById('setPosition').value = settings.position || '';
+  document.getElementById('setCurrency').value = settings.currency || 'RD$';
+  document.getElementById('setWeekStart').value = settings.weekStart || 'monday';
+  document.getElementById('setTimeFormat').value = settings.timeFormat || '12';
+  document.getElementById('setRateNormal').value = settings.rateNormal || '';
+  document.getElementById('multNormal').value = settings.multipliers.normal;
+  document.getElementById('multDomingo').value = settings.multipliers.domingo;
+  document.getElementById('multFeriado').value = settings.multipliers.feriado;
+  document.getElementById('multNocturna').value = settings.multipliers.nocturna;
+
+  document.getElementById('employeeSubtitle').textContent = settings.name
+    ? settings.name + (settings.company ? ' · ' + settings.company : '')
+    : 'Registro y seguimiento personal';
+
+  updateMoneyPreview();
+  updateBackupInfo();
+
+  var hasSamples = records.some(function(r){ return r.sample; });
+  document.getElementById('sampleNote').classList.toggle('hidden', !hasSamples);
+}
+
+function updateMoneyPreview(){
+  var rate = parseFloat(document.getElementById('setRateNormal').value);
+  var preview = document.getElementById('moneyPreview');
+  if(!isNaN(rate) && rate > 0){
+    var mults = {
+      normal: parseFloat(document.getElementById('multNormal').value) || DEFAULT_MULTIPLIERS.normal,
+      domingo: parseFloat(document.getElementById('multDomingo').value) || DEFAULT_MULTIPLIERS.domingo,
+      feriado: parseFloat(document.getElementById('multFeriado').value) || DEFAULT_MULTIPLIERS.feriado,
+      nocturna: parseFloat(document.getElementById('multNocturna').value) || DEFAULT_MULTIPLIERS.nocturna
+    };
+    var currency = document.getElementById('setCurrency').value.trim() || 'RD$';
+    var total = records.reduce(function(sum,r){ return sum + (r.minutes/60) * rate * (mults[r.type]||1); }, 0);
+    preview.style.display = 'flex';
+    document.getElementById('moneyPreviewValue').textContent = currency + total.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function updateBackupInfo(){
+  var last = localStorage.getItem(BACKUP_KEY);
+  var el = document.getElementById('backupInfoText');
+  if(last){
+    var d = new Date(last);
+    el.textContent = 'Último respaldo: ' + d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  } else {
+    el.textContent = 'Aún no has exportado un respaldo.';
+  }
+}
+
+function saveSettingsForm(){
+  settings.name = document.getElementById('setName').value.trim();
+  settings.company = document.getElementById('setCompany').value.trim();
+  settings.position = document.getElementById('setPosition').value.trim();
+  settings.currency = document.getElementById('setCurrency').value.trim() || 'RD$';
+  settings.weekStart = document.getElementById('setWeekStart').value;
+  settings.timeFormat = document.getElementById('setTimeFormat').value;
+  settings.rateNormal = document.getElementById('setRateNormal').value;
+  settings.multipliers = {
+    normal: parseFloat(document.getElementById('multNormal').value) || DEFAULT_MULTIPLIERS.normal,
+    domingo: parseFloat(document.getElementById('multDomingo').value) || DEFAULT_MULTIPLIERS.domingo,
+    feriado: parseFloat(document.getElementById('multFeriado').value) || DEFAULT_MULTIPLIERS.feriado,
+    nocturna: parseFloat(document.getElementById('multNocturna').value) || DEFAULT_MULTIPLIERS.nocturna
+  };
+  saveSettings();
+  renderCalendarDow();
+  refreshAll();
+  toast('Configuración guardada.', 'success');
+}
+
+function removeSampleData(){
+  openConfirm('Eliminar datos de ejemplo', 'Se eliminarán únicamente los registros de ejemplo incluidos al iniciar la app. Tus registros propios no se verán afectados.', function(){
+    records = records.filter(function(r){ return !r.sample; });
+    saveRecords();
+    closeConfirm();
+    refreshAll();
+    toast('Datos de ejemplo eliminados.', 'success');
+  }, 'Sí, eliminar');
+}
+
+/* ============================================================
+   EXPORT / IMPORT
+============================================================ */
+function downloadBlob(content, filename, mime){
+  var blob = new Blob([content], {type: mime});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportCsv(){
+  var list = getSortedFiltered();
+  var headers = ['Fecha','Dia','Entrada','Salida','Horas','HorasDecimal','Tipo','Estado','Dinero','Nota','Observaciones'];
+  var rows = list.map(function(r){
+    return [
+      formatDateShort(r.date), dowName(r.date), formatTimeDisplay(r.timeIn), formatTimeDisplay(r.timeOut),
+      formatMinutes(r.minutes), minutesToDecimal(r.minutes), TYPE_LABELS[r.type], STATUS_LABELS[r.status],
+      rateConfigured() ? recordMoney(r).toFixed(2) : '', csvEscape(r.note), csvEscape(r.observations)
+    ].join(',');
+  });
+  var csv = headers.join(',') + '\n' + rows.join('\n');
+  downloadBlob('\uFEFF' + csv, 'horas_extras_'+todayStr()+'.csv', 'text/csv;charset=utf-8;');
+  toast('CSV exportado correctamente.', 'success');
+}
+function csvEscape(v){
+  v = v == null ? '' : String(v);
+  if(v.indexOf(',') > -1 || v.indexOf('"') > -1 || v.indexOf('\n') > -1){ v = '"' + v.replace(/"/g,'""') + '"'; }
+  return v;
+}
+
+function exportJson(){
+  var payload = {version: DATA_VERSION, records: records, settings: settings, exportedAt: new Date().toISOString()};
+  downloadBlob(JSON.stringify(payload, null, 2), 'respaldo_horas_extras_'+todayStr()+'.json', 'application/json');
+  localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+  updateBackupInfo();
+  toast('Respaldo exportado correctamente.', 'success');
+}
+
+function importJson(file){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var data = JSON.parse(e.target.result);
+      if(!data || !Array.isArray(data.records)) throw new Error('Formato inválido');
+      var validCount = 0, invalidCount = 0;
+      var cleanRecords = [];
+      data.records.forEach(function(r){
+        if(isValidRecord(r)){ cleanRecords.push(sanitizeRecord(r)); validCount++; }
+        else invalidCount++;
+      });
+      if(validCount === 0){ toast('El archivo no contiene registros válidos.', 'danger'); return; }
+
+      pendingImportData = {records: cleanRecords, settings: data.settings || null, invalidCount: invalidCount};
+      document.getElementById('importMessage').textContent =
+        'El archivo contiene '+validCount+' registro(s) válido(s)'+(invalidCount ? ' ('+invalidCount+' inválido(s) serán ignorados)' : '')+'. ¿Cómo deseas importarlos?';
+      document.getElementById('importModal').classList.add('open');
+    }catch(err){
+      toast('El archivo seleccionado no es un respaldo válido.', 'danger');
+    }
+  };
+  reader.onerror = function(){ toast('No se pudo leer el archivo seleccionado.', 'danger'); };
+  reader.readAsText(file);
+}
+
+function closeImportModal(){
+  document.getElementById('importModal').classList.remove('open');
+  pendingImportData = null;
+}
+
+function doImportReplace(){
+  if(!pendingImportData) return;
+  records = pendingImportData.records;
+  if(pendingImportData.settings) settings = Object.assign(settings, pendingImportData.settings, {multipliers: Object.assign({}, DEFAULT_MULTIPLIERS, pendingImportData.settings.multipliers || {})});
+  saveRecords(); saveSettings();
+  closeImportModal();
+  refreshAll();
+  toast('Respaldo importado (reemplazo completo).', 'success');
+}
+function doImportCombine(){
+  if(!pendingImportData) return;
+  var existingIds = {};
+  records.forEach(function(r){ existingIds[r.id] = true; });
+  var added = 0;
+  pendingImportData.records.forEach(function(r){
+    if(existingIds[r.id]){
+      r = Object.assign({}, r, {id: uid()}); // avoid id collision, keep original untouched
+    }
+    records.push(r);
+    added++;
+  });
+  saveRecords();
+  closeImportModal();
+  refreshAll();
+  toast(added + ' registro(s) combinados con tus datos actuales.', 'success');
+}
+
+/* ============================================================
+   REPORTS
+============================================================ */
+function getReportRange(period, refDateStr){
+  var ref = parseDateLocal(refDateStr);
+  var start, end;
+  if(period === 'day'){
+    start = new Date(ref); start.setHours(0,0,0,0);
+    end = new Date(ref); end.setHours(23,59,59,999);
+  } else if(period === 'week'){
+    var range = getWeekRange(ref);
+    start = range.start; end = range.end;
+  } else if(period === 'year'){
+    start = new Date(ref.getFullYear(),0,1,0,0,0,0);
+    end = new Date(ref.getFullYear(),11,31,23,59,59,999);
+  } else { // month
+    start = new Date(ref.getFullYear(), ref.getMonth(), 1, 0,0,0,0);
+    end = new Date(ref.getFullYear(), ref.getMonth()+1, 0, 23,59,59,999);
+  }
+  return {start:start, end:end};
+}
+
+function generateReport(){
+  var period = document.getElementById('repPeriod').value;
+  var refDate = document.getElementById('repDate').value || todayStr();
+  var range = getReportRange(period, refDate);
+
+  var list = records.filter(function(r){
+    var d = parseDateLocal(r.date);
+    return d >= range.start && d <= range.end;
+  });
+
+  var out = document.getElementById('reportOutput');
+  if(list.length === 0){
+    out.innerHTML = '<p class="report-empty">No hay registros en el periodo seleccionado.</p>';
+    return;
+  }
+
+  var s = computeStats(list);
+  var showMoney = rateConfigured();
+
+  var statsHtml = '<div class="report-stats">' +
+    reportStat('Horas totales', formatMinutes(s.totalMin)) +
+    reportStat('Días con registros', s.days) +
+    reportStat('Horas pendientes', formatMinutes(s.pendingMin)) +
+    reportStat('Horas aprobadas', formatMinutes(s.approvedMin)) +
+    reportStat('Horas pagadas', formatMinutes(s.paidMin)) +
+    (showMoney ? reportStat('Dinero total', formatMoney(s.moneyTotal)) : '') +
+    (showMoney ? reportStat('Dinero pendiente', formatMoney(s.moneyPending)) : '') +
+    (showMoney ? reportStat('Dinero pagado', formatMoney(s.moneyPaid)) : '') +
+    '</div>';
+
+  // hours by type chart
+  var byType = {normal:0, domingo:0, feriado:0, nocturna:0};
+  list.forEach(function(r){ byType[r.type] = (byType[r.type]||0) + r.minutes; });
+  var maxType = Math.max.apply(null, Object.keys(byType).map(function(k){ return byType[k]; }).concat([1]));
+  var typeColors = {normal:'var(--primary)', domingo:'var(--approved)', feriado:'var(--danger)', nocturna:'#2A6C97'};
+  var typeChart = Object.keys(byType).map(function(k){
+    var pct = Math.round((byType[k]/maxType)*100);
+    return '<div class="bar-row"><span class="bar-label">'+TYPE_LABELS[k]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+typeColors[k]+';"></div></div><span class="bar-value tabular">'+formatMinutes(byType[k])+'</span></div>';
+  }).join('');
+
+  // status distribution chart
+  var byStatus = {pendiente:0, aprobada:0, pagada:0};
+  list.forEach(function(r){ byStatus[r.status] = (byStatus[r.status]||0) + r.minutes; });
+  var maxStatus = Math.max.apply(null, Object.keys(byStatus).map(function(k){ return byStatus[k]; }).concat([1]));
+  var statusColors = {pendiente:'var(--warning)', aprobada:'var(--approved)', pagada:'var(--success)'};
+  var statusChart = Object.keys(byStatus).map(function(k){
+    var pct = Math.round((byStatus[k]/maxStatus)*100);
+    return '<div class="bar-row"><span class="bar-label">'+STATUS_LABELS[k]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+statusColors[k]+';"></div></div><span class="bar-value tabular">'+formatMinutes(byStatus[k])+'</span></div>';
+  }).join('');
+
+  var chartsHtml = '<div class="report-charts">' +
+    '<div class="chart-block"><h4>Horas por tipo</h4>'+typeChart+'</div>' +
+    '<div class="chart-block"><h4>Horas por estado</h4>'+statusChart+'</div>' +
+    '</div>';
+
+  out.innerHTML = statsHtml + chartsHtml;
+
+  function reportStat(label, value){
+    return '<div class="report-stat"><div class="stat-label">'+label+'</div><div class="stat-value tabular">'+value+'</div></div>';
+  }
+}
+
+/* ============================================================
+   REFRESH / INIT
+============================================================ */
+function refreshAll(){
+  renderStats();
+  renderCalendar();
+  renderDayDetail();
+  populateFilterSelectors();
+  renderTable();
+  renderSettingsForm();
+  generateReport();
+}
+
+function bindEvents(){
+  document.getElementById('themeToggle').addEventListener('click', function(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
+  });
+
+  document.getElementById('btnOpenAdd').addEventListener('click', function(){ openForm(null); });
+  document.getElementById('btnCloseForm').addEventListener('click', closeForm);
+  document.getElementById('btnCloseForm2').addEventListener('click', closeForm);
+  document.getElementById('btnCancelEdit').addEventListener('click', closeForm);
+  document.getElementById('formModal').addEventListener('click', function(e){ if(e.target === this) closeForm(); });
+
+  document.getElementById('recordForm').addEventListener('submit', handleFormSubmit);
+  document.getElementById('fldDate').addEventListener('change', updateDowField);
+  document.getElementById('fldIn').addEventListener('change', updateAutoResult);
+  document.getElementById('fldOut').addEventListener('change', updateAutoResult);
+  document.getElementById('fldManual').addEventListener('change', updateManualVisibility);
+  document.getElementById('fldManualH').addEventListener('input', updateMoneyResult);
+  document.getElementById('fldManualM').addEventListener('input', updateMoneyResult);
+  document.getElementById('fldType').addEventListener('change', updateMoneyResult);
+
+  document.getElementById('btnCloseDetails').addEventListener('click', closeDetails);
+  document.getElementById('btnCloseDetails2').addEventListener('click', closeDetails);
+  document.getElementById('detailsModal').addEventListener('click', function(e){ if(e.target === this) closeDetails(); });
+
+  document.getElementById('confirmCancel').addEventListener('click', closeConfirm);
+  document.getElementById('confirmModal').addEventListener('click', function(e){ if(e.target === this) closeConfirm(); });
+  document.getElementById('confirmAccept').addEventListener('click', function(){
+    if(typeof pendingConfirmAction === 'function') pendingConfirmAction();
+  });
+
+  document.getElementById('importCancel').addEventListener('click', closeImportModal);
+  document.getElementById('importModal').addEventListener('click', function(e){ if(e.target === this) closeImportModal(); });
+  document.getElementById('importReplace').addEventListener('click', function(){
+    openConfirm('Confirmar reemplazo', 'Esto sustituirá TODOS tus registros actuales por los del archivo importado. Esta acción no se puede deshacer.', function(){ closeConfirm(); doImportReplace(); }, 'Sí, reemplazar');
+  });
+  document.getElementById('importCombine').addEventListener('click', doImportCombine);
+
+  document.getElementById('calPrev').addEventListener('click', function(){
+    calMonth--; if(calMonth < 0){ calMonth = 11; calYear--; }
+    renderCalendar(); renderDayDetail();
+  });
+  document.getElementById('calNext').addEventListener('click', function(){
+    calMonth++; if(calMonth > 11){ calMonth = 0; calYear++; }
+    renderCalendar(); renderDayDetail();
+  });
+  document.getElementById('calToday').addEventListener('click', function(){
+    var now = new Date(); calYear = now.getFullYear(); calMonth = now.getMonth();
+    renderCalendar(); renderDayDetail();
+  });
+
+  ['fText','fDate','fDateFrom','fDateTo','fStatus','fType','fMonth','fYear'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){ readFiltersFromForm(); renderTable(); });
+    document.getElementById(id).addEventListener('change', function(){ readFiltersFromForm(); renderTable(); });
+  });
+  document.getElementById('btnClearFilters').addEventListener('click', clearFilters);
+  document.getElementById('chipPagadas').addEventListener('click', function(){
+    document.getElementById('fStatus').value = (filters.status === 'pagada') ? '' : 'pagada';
+    readFiltersFromForm(); renderTable();
+  });
+  document.getElementById('chipPendientes').addEventListener('click', function(){
+    document.getElementById('fStatus').value = (filters.status === 'pendiente') ? '' : 'pendiente';
+    readFiltersFromForm(); renderTable();
+  });
+
+  document.getElementById('btnExportCsv').addEventListener('click', exportCsv);
+  document.getElementById('btnPrint').addEventListener('click', function(){ window.print(); });
+
+  document.getElementById('btnSaveSettings').addEventListener('click', saveSettingsForm);
+  document.getElementById('btnRemoveSamples').addEventListener('click', removeSampleData);
+  ['setRateNormal','multNormal','multDomingo','multFeriado','multNocturna','setCurrency'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', updateMoneyPreview);
+  });
+
+  document.getElementById('btnExportJson').addEventListener('click', exportJson);
+  document.getElementById('btnImportTrigger').addEventListener('click', function(){ document.getElementById('importFile').click(); });
+  document.getElementById('importFile').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(file) importJson(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('btnGenerateReport').addEventListener('click', generateReport);
+
+  bindSortHeaders();
+
+  document.addEventListener('keydown', function(e){
+    var tag = (document.activeElement && document.activeElement.tagName) || '';
+    var typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    if(e.key === 'Escape'){ closeForm(); closeDetails(); closeConfirm(); closeImportModal(); return; }
+    if(typing) return;
+    if(e.key === 'n' || e.key === 'N'){ e.preventDefault(); openForm(null); }
+    else if(e.key === '/'){ e.preventDefault(); document.getElementById('fText').focus(); }
+  });
+}
+
+function init(){
+  loadTheme();
+  loadRecords();
+  loadSettings();
+
+  var now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+
+  renderCalendarDow();
+  populateFilterSelectors();
+  bindEvents();
+  refreshAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
